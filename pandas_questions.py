@@ -66,12 +66,20 @@ def compute_referendum_result_by_regions(referendum_and_areas):
     ['name_reg', 'Registered', 'Abstentions', 'Null', 'Choice A', 'Choice B']
     """
     grp = referendum_and_areas.groupby("code_reg")
-    sums = grp[["Registered", "Abstentions", "Null", "Choice A", "Choice B"]].sum()
+    sum_cols = ["Registered", "Abstentions", "Null", "Choice A", "Choice B"]
+    sums = grp[sum_cols].sum()
     names = grp["name_reg"].first()
     result = sums.copy()
     result.insert(0, "name_reg", names)
-    result = result[["name_reg", "Registered", "Abstentions", "Null", "Choice A", "Choice B"]]
-    return result
+    cols = [
+        "name_reg",
+        "Registered",
+        "Abstentions",
+        "Null",
+        "Choice A",
+        "Choice B",
+    ]
+    return result[cols]
 
 
 def plot_referendum_map(referendum_result_by_regions):
@@ -86,10 +94,17 @@ def plot_referendum_map(referendum_result_by_regions):
     regions = gpd.read_file("data/regions.geojson")
     if "name_reg" not in regions.columns and "nom" in regions.columns:
         regions = regions.rename(columns={"nom": "name_reg"})
+
     if "ratio" not in referendum_result_by_regions.columns:
-        expressed = referendum_result_by_regions["Choice A"] + referendum_result_by_regions["Choice B"]
+        expressed = (
+            referendum_result_by_regions["Choice A"]
+            + referendum_result_by_regions["Choice B"]
+        )
         referendum_result_by_regions = referendum_result_by_regions.copy()
-        referendum_result_by_regions["ratio"] = referendum_result_by_regions["Choice A"] / expressed
+        referendum_result_by_regions["ratio"] = (
+            referendum_result_by_regions["Choice A"] / expressed
+        )
+
     gdf = regions.merge(
         referendum_result_by_regions[["name_reg", "ratio"]],
         on="name_reg",
